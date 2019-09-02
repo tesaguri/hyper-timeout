@@ -1,7 +1,12 @@
 [package]
 name = "hyper-timeout"
-version = "0.1.0"
+version = "0.1.2"
 authors = ["Herman J. Radtke III <herman@hermanradtke.com>"]
+description = "A connect, read and write timeout aware connector to be used with hyper Client."
+license = "MIT/Apache-2.0"
+documentation = "https://github.com/hjr3/hyper-timeout"
+homepage = "https://github.com/hjr3/hyper-timeout"
+repository = "https://github.com/hjr3/hyper-timeout"
 
 [badges]
 travis-ci = { repository = "https://github.com/hjr3/hyper-timeout", branch = "master" }
