@@ -22,3 +22,4 @@ tokio-io-timeout = "0.4"
 [dev-dependencies]
 hyper-tls = "0.4"
 tokio = { version = "0.2", features = ["io-std", "macros"] }
+env_logger = "0.7.1"
