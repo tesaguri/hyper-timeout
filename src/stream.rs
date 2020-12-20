@@ -1,12 +1,10 @@
 use std::io;
-use std::mem::MaybeUninit;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::{Duration};
 
-use bytes::{Buf, BufMut};
 use hyper::client::connect::{Connected, Connection};
-use tokio::io::{AsyncRead, AsyncWrite};
+use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use tokio_io_timeout::TimeoutStream;
 
 /// A timeout stream that implements required traits to be a Connector
@@ -68,27 +66,12 @@ impl<S> AsyncRead for TimeoutConnectorStream<S>
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    unsafe fn prepare_uninitialized_buffer(&self, buf: &mut [MaybeUninit<u8>]) -> bool {
-        self.0.prepare_uninitialized_buffer(buf)
-    }
-
     fn poll_read(
         mut self: Pin<&mut Self>,
         cx: &mut Context,
-        buf: &mut [u8],
-    ) -> Poll<Result<usize, io::Error>> {
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<Result<(), io::Error>> {
         Pin::new(&mut self.0).poll_read(cx, buf)
-    }
-
-    fn poll_read_buf<B>(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context,
-        buf: &mut B,
-    ) -> Poll<Result<usize, io::Error>>
-    where
-        B: BufMut,
-    {
-        Pin::new(&mut self.0).poll_read_buf(cx, buf)
     }
 }
 
@@ -110,17 +93,6 @@ where
 
     fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), io::Error>> {
         Pin::new(&mut self.0).poll_shutdown(cx)
-    }
-
-    fn poll_write_buf<B>(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context,
-        buf: &mut B,
-    ) -> Poll<Result<usize, io::Error>>
-    where
-        B: Buf,
-    {
-        Pin::new(&mut self.0).poll_write_buf(cx, buf)
     }
 }
 

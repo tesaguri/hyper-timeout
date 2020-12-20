@@ -13,11 +13,14 @@ edition = "2018"
 travis-ci = { repository = "https://github.com/hjr3/hyper-timeout", branch = "master" }
 
 [dependencies]
-bytes = "0.5"
-hyper = { version = "0.13", default-features = false, features = ["tcp"] }
-tokio = "0.2"
-tokio-io-timeout = "0.4"
+hyper = { version = "0.14.0-dev", default-features = false, features = ["client", "tcp"] }
+tokio = "0.3"
+tokio-io-timeout = "0.5"
 
 [dev-dependencies]
 hyper-tls = "0.4"
-tokio = { version = "0.2", features = ["io-std", "macros"] }
+tokio = { version = "0.3", features = ["io-util", "io-std", "macros", "rt-multi-thread"] }
+
+[patch.crates-io]
+hyper = { git = "https://github.com/hyperium/hyper.git" }
+hyper-tls = { git = "https://github.com/messense/hyper-tls.git", branch = "bump-tokio" }
