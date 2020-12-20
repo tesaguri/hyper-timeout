@@ -13,11 +13,12 @@ edition = "2018"
 travis-ci = { repository = "https://github.com/hjr3/hyper-timeout", branch = "master" }
 
 [dependencies]
-bytes = "0.5"
-hyper = { version = "0.13", default-features = false, features = ["tcp"] }
-tokio = "0.2"
-tokio-io-timeout = "0.4"
+hyper = { version = "0.14.2", default-features = false, features = ["client"] }
+pin-project = "1"
+tokio = "1"
+tokio-io-timeout = "1.0.1"
 
 [dev-dependencies]
-hyper-tls = "0.4"
-tokio = { version = "0.2", features = ["io-std", "macros"] }
+hyper = { version = "0.14", features = ["http1"] }
+hyper-tls = "0.5"
+tokio = { version = "1", features = ["io-util", "io-std", "macros", "rt-multi-thread"] }

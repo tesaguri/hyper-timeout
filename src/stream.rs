@@ -1,21 +1,21 @@
 use std::io;
-use std::mem::MaybeUninit;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::{Duration};
 
-use bytes::{Buf, BufMut};
 use hyper::client::connect::{Connected, Connection};
-use tokio::io::{AsyncRead, AsyncWrite};
+use pin_project::pin_project;
+use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use tokio_io_timeout::TimeoutStream;
 
 /// A timeout stream that implements required traits to be a Connector
+#[pin_project]
 #[derive(Debug)]
-pub struct TimeoutConnectorStream<S>(TimeoutStream<S>);
+pub struct TimeoutConnectorStream<S>(#[pin] TimeoutStream<S>);
 
 impl<S> TimeoutConnectorStream<S>
 where
-    S: AsyncRead + AsyncWrite + Unpin,
+    S: AsyncRead + AsyncWrite,
 {
     /// Returns a new `TimeoutConnectorStream` wrapping the specified stream.
     ///
@@ -58,6 +58,11 @@ where
         self.0.get_mut()
     }
 
+    /// Returns a pinned mutable reference to the inner stream.
+    pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut S> {
+        self.project().0.get_pin_mut()
+    }
+
     /// Consumes the stream, returning the inner stream.
     pub fn into_inner(self) -> S {
         self.0.into_inner()
@@ -66,67 +71,41 @@ where
 
 impl<S> AsyncRead for TimeoutConnectorStream<S>
 where
-    S: AsyncRead + AsyncWrite + Unpin,
+    S: AsyncRead + AsyncWrite,
 {
-    unsafe fn prepare_uninitialized_buffer(&self, buf: &mut [MaybeUninit<u8>]) -> bool {
-        self.0.prepare_uninitialized_buffer(buf)
-    }
-
     fn poll_read(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         cx: &mut Context,
-        buf: &mut [u8],
-    ) -> Poll<Result<usize, io::Error>> {
-        Pin::new(&mut self.0).poll_read(cx, buf)
-    }
-
-    fn poll_read_buf<B>(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context,
-        buf: &mut B,
-    ) -> Poll<Result<usize, io::Error>>
-    where
-        B: BufMut,
-    {
-        Pin::new(&mut self.0).poll_read_buf(cx, buf)
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<Result<(), io::Error>> {
+        self.project().0.poll_read(cx, buf)
     }
 }
 
 impl<S> AsyncWrite for TimeoutConnectorStream<S>
 where
-    S: AsyncRead + AsyncWrite + Unpin,
+    S: AsyncRead + AsyncWrite,
 {
     fn poll_write(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         cx: &mut Context,
         buf: &[u8],
     ) -> Poll<Result<usize, io::Error>> {
-        Pin::new(&mut self.0).poll_write(cx, buf)
+        self.project().0.poll_write(cx, buf)
     }
 
-    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), io::Error>> {
-        Pin::new(&mut self.0).poll_flush(cx)
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), io::Error>> {
+        self.project().0.poll_flush(cx)
     }
 
-    fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), io::Error>> {
-        Pin::new(&mut self.0).poll_shutdown(cx)
-    }
-
-    fn poll_write_buf<B>(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context,
-        buf: &mut B,
-    ) -> Poll<Result<usize, io::Error>>
-    where
-        B: Buf,
-    {
-        Pin::new(&mut self.0).poll_write_buf(cx, buf)
+    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), io::Error>> {
+        self.project().0.poll_shutdown(cx)
     }
 }
 
 impl<S> Connection for TimeoutConnectorStream<S>
 where
-    S: AsyncRead + AsyncWrite + Connection + Unpin,
+    S: AsyncRead + AsyncWrite + Connection,
 {
     fn connected(&self) -> Connected {
         self.0.get_ref().connected()
